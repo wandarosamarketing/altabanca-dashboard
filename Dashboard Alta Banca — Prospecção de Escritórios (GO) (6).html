@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alta Banca · Acompanhamento de prospecção (GO)</title>
+<style>
+  :root{--bg:#f4f6fb;--card:#fff;--ink:#1b2535;--mut:#6b7689;--line:#e4e8f0;--acc:#2563eb;--ok:#15803d;--bad:#b91c1c;--warn:#b45309}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  .wrap{max-width:1320px;margin:0 auto;padding:24px}
+  header{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px}
+  .btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:13px}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+  button.tiny{padding:2px 8px;font-size:12px;background:#fee2e2;color:#991b1b}
+  .stamp{font-size:12px;color:var(--mut)}
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tab{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .filters{background:var(--card);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;box-shadow:0 1px 2px rgba(0,0,0,.05);margin-bottom:16px}
+  .f label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px;font-weight:600}
+  input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;font-family:inherit;color:var(--ink)}
+  .f input,.f select{min-width:190px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+  .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .card .k{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .card .v{font-size:26px;font-weight:700;margin:6px 0 4px}
+  .card .d{font-size:12px;color:var(--mut)}
+  .up{color:var(--ok);font-weight:600}.down{color:var(--bad);font-weight:600}.neu{color:var(--mut)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .panel{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .panel.full{grid-column:1/-1}
+  .panel h2{font-size:15px;margin:0 0 4px}
+  .panel .hint{font-size:12px;color:var(--mut);margin-bottom:12px}
+  .row{display:grid;grid-template-columns:170px 1fr 56px;gap:10px;align-items:center;margin:7px 0;font-size:13px}
+  .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .track{background:#eef2f7;border-radius:6px;height:18px;overflow:hidden}
+  .fill{background:var(--acc);height:100%;border-radius:6px}
+  .val{text-align:right;font-weight:600}
+  .todo{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .todo:last-child{border-bottom:0}
+  .empty{color:var(--mut);text-align:center;padding:30px 10px;font-size:13px;background:#fafbfd;border:1px dashed var(--line);border-radius:10px}
+  .tbl{overflow-x:auto;background:var(--card);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:middle}
+  th{background:#f8fafc;cursor:pointer;user-select:none;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--mut)}
+  th:hover{color:var(--ink)}
+  td input,td select{padding:5px 6px;font-size:12px;min-width:0}
+  td input.obs{width:220px}
+  td input.msg{width:150px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#eef2f7;color:#334155}
+  .tag.ok{background:#dcfce7;color:#166534}.tag.warn{background:#fef3c7;color:#92400e}.tag.bad{background:#fee2e2;color:#991b1b}
+  .count{font-size:12px;color:var(--mut);padding:10px 12px}
+  a{color:var(--acc)}
+  .hform{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--card);padding:14px;border-radius:12px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .hform input,.hform select{min-width:160px}
+  .hform .txt{min-width:340px;flex:1}
+  .hist{background:var(--card);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .hi{display:grid;grid-template-columns:100px 220px 150px 1fr 40px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+  .hi:last-child{border-bottom:0}
+  .hi .d{color:var(--mut)}
+  @media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:120px 1fr 50px}.hi{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Alta Banca · Acompanhamento de prospecção (GO)</h1>
+      <div class="sub">55 escritórios de advocacia · contato via WhatsApp · tudo que você preenche aparece nos cards e gráficos</div>
+    </div>
+    <div>
+      <div class="btns">
+        <button class="ghost" id="btnCsv">Exportar CSV</button>
+        <button class="ghost" id="btnReset">Zerar acompanhamento</button>
+      </div>
+      <div class="stamp" id="stamp" style="text-align:right;margin-top:6px"></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="visao">Visão geral</button>
+    <button class="tab" data-tab="acomp">Acompanhamento</button>
+    <button class="tab" data-tab="hist">Histórico de conversas</button>
+  </div>
+
+  <div class="filters">
+    <div class="f"><label for="fBusca">Buscar</label>
+      <input id="fBusca" type="search" placeholder="Nome, cidade, área ou telefone"></div>
+    <div class="f" id="fCidadeWrap"><label for="fCidade">Cidade</label><select id="fCidade"></select></div>
+    <div class="f" id="fSitWrap"><label for="fSit">Situação</label>
+      <select id="fSit"><option value="all">Todas</option></select></div>
+  </div>
+
+  <!-- VISÃO GERAL -->
+  <section id="secVisao">
+    <div class="cards" id="cards"></div>
+    <div class="grid">
+      <div class="panel">
+        <h2>Funil de situação</h2>
+        <div class="hint">Quantos escritórios estão em cada etapa</div>
+        <div id="chartFunil"></div>
+      </div>
+      <div class="panel">
+        <h2>Escritórios por cidade</h2>
+        <div class="hint">Top 10 cidades no filtro atual</div>
+        <div id="chartCidade"></div>
+      </div>
+      <div class="panel full">
+        <h2>Próximas ações</h2>
+        <div class="hint">Quem responder, quem precisa de 2º contato e quem ainda não foi contatado</div>
+        <div id="acoes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACOMPANHAMENTO -->
+  <section id="secAcomp" style="display:none">
+    <div class="tbl">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="count" id="count"></div>
+    </div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section id="secHist" style="display:none">
+    <div class="hform">
+      <div class="f"><label for="hLead">Escritório</label><select id="hLead"></select></div>
+      <div class="f"><label for="hData">Data</label><input type="date" id="hData"></div>
+      <div class="f"><label for="hTipo">Tipo</label>
+        <select id="hTipo">
+          <option>Envio</option><option>Resposta</option><option>Reunião</option><option>Follow-up</option><option>Outro</option>
+        </select></div>
+      <div class="f txt"><label for="hTexto">Resumo da conversa</label>
+        <input id="hTexto" type="text" placeholder="Ex.: Respondeu pedindo valores; combinamos ligação na terça"></div>
+      <div><button id="hAdd">Adicionar</button></div>
+    </div>
+    <div class="hist" id="histList"></div>
+  </section>
+</div>
+
+<script>
+// ===== Base: 55 escritórios (aba CRM Comercial + Advogados) =====
+const RAW = [
+["Hudson Oliveira Advogado","Goiânia","Grande Goiânia","(62) 99602-8530","Provável (celular)",5.0,851,"Criminal (segundo avaliações)"],
+["Jonathan N. da Silva","Goiânia","Grande Goiânia","(62) 98258-9730","Provável (celular)",5.0,1845,"Trabalhista (segundo avaliações)"],
+["Benedito Torres Advogados","Goiânia","Grande Goiânia","(62) 99985-8877","Citado em avaliação",5.0,165,""],
+["Valdiro - Advogado - Goiânia","Goiânia","Grande Goiânia","(62) 99453-7310","Provável (celular)",5.0,107,""],
+["Jean Tavares Advogado Criminalista","Goiânia","Grande Goiânia","(62) 98125-8772","Provável (celular)",5.0,71,"Criminal"],
+["Taveira Advogados","Anápolis","Centro","(62) 99153-9290","Provável (celular)",5.0,2014,""],
+["Gomes Taveira Advogados","Anápolis","Centro","(62) 98238-1471","Provável (celular)",5.0,808,"Trabalhista (segundo avaliações)"],
+["Matheus Aguiar Advocacia","Anápolis","Centro","(62) 98529-2963","Provável (celular)",5.0,353,"Previdenciário (segundo avaliações)"],
+["Pimentel Ramos","Anápolis","Centro","(62) 99235-2520","Provável (celular)",5.0,200,""],
+["Dayanne Teles","Anápolis","Centro","(62) 99257-5291","Confirmado",4.9,1057,""],
+["Matsuda Ramos Advogados - Garavelo","Aparecida de Goiânia","Grande Goiânia","(62) 98111-4343","Provável (celular)",4.8,139,"Trabalhista"],
+["Thiago Fortes Advogados","Aparecida de Goiânia","Grande Goiânia","(62) 99442-6318","Provável (celular)",5.0,19,"Criminal"],
+["Oliveira Advocacia","Aparecida de Goiânia","Grande Goiânia","(62) 98147-3938","Provável (celular)",4.9,103,""],
+["Lemuel Bandeira Advocacia Especializada","Aparecida de Goiânia","Grande Goiânia","(62) 99614-0270","Provável (celular)",4.9,61,"Trabalhista (segundo avaliações)"],
+["Advocacia Martins","Aparecida de Goiânia","Grande Goiânia","(62) 99272-1440","Provável (celular)",4.8,23,""],
+["Dra. Markenia Vilela - Advogada Criminalista","Rio Verde","Sudoeste","(64) 99296-5304","Provável (celular)",5.0,23,"Criminal"],
+["Teresa Barros Advocacia","Rio Verde","Sudoeste","(64) 3613-1147","Improvável (fixo)",4.9,354,""],
+["Advocacia Natana Marcelina","Luziânia","Entorno do DF","(61) 99512-5036","Provável (celular)",5.0,112,""],
+["MBA Advocacia - Moreira de Brito e Alves","Luziânia","Entorno do DF","(61) 99301-7958","Provável (celular)",5.0,179,"Previdenciário e penal (segundo avaliações)"],
+["Gabriel Coelho Advocacia e Consultoria Jurídica","Águas Lindas de Goiás","Entorno do DF","(61) 99517-7652","Provável (celular)",5.0,177,"Família (segundo avaliações)"],
+["WIF - Advocacia","Águas Lindas de Goiás","Entorno do DF","(61) 99612-2917","Provável (celular)",4.9,344,""],
+["Lyndon Johnson Figueiredo Advogados","Valparaíso de Goiás","Entorno do DF","(61) 98453-2071","Provável (celular)",5.0,126,"Criminal (segundo avaliações)"],
+["Alves e Rodrigues","Valparaíso de Goiás","Entorno do DF","(61) 98469-4583","Provável (celular)",5.0,77,""],
+["Victor Diego","Trindade","Grande Goiânia","(62) 99702-9135","Confirmado",5.0,148,""],
+["Neto & Alencar Advogados","Trindade","Grande Goiânia","(62) 99166-7488","Provável (celular)",5.0,417,"Previdenciário (segundo avaliações)"],
+["Andressa Miranda - Advogados","Formosa","Entorno do DF","(61) 99695-4579","Provável (celular)",5.0,10,""],
+["Figueiredo & Wolney - Advocacia e Consultoria Jurídica","Formosa","Entorno do DF","(61) 99638-4993","Provável (celular)",5.0,100,""],
+["Rodrigues e Oliveira Advogados Associados","Senador Canedo","Grande Goiânia","(62) 99929-8984","Provável (celular)",5.0,65,""],
+["Thiago de Almeida Silva","Senador Canedo","Grande Goiânia","(62) 98244-1319","Provável (celular)",5.0,125,""],
+["Barbosa & Paião Advogados","Itumbiara","Sul","(64) 99248-4450","Provável (celular)",5.0,93,"Cível, previdenciário, tributário, trabalhista, empresarial e consumidor"],
+["Kimberlly Bratifich Advocacia","Itumbiara","Sul","(64) 99275-7456","Provável (celular)",5.0,99,""],
+["Bruno Campos Esteves Advocacia","Catalão","Sul","(64) 99978-6173","Provável (celular)",4.9,165,""],
+["Dr. Jeferson Teodoro Neto","Catalão","Sul","(64) 99929-3852","Confirmado",5.0,82,"Inventário, previdenciário, imobiliário e criminal"],
+["Heitor Soares de Araújo Vilela","Jataí","Sudoeste","(64) 99623-0640","Provável (celular)",5.0,59,"Precatórios, trabalhista, penal e cível (segundo avaliações)"],
+["Giuliano Biella - Direito da Saúde","Jataí","Sudoeste","(64) 98141-3037","Provável (celular)",5.0,15,"Direito da Saúde"],
+["Arlen S Oliveira - Advogado","Caldas Novas","Sul","(64) 99267-1864","Provável (celular)",5.0,280,""],
+["Afonso e Andrade - Advocacia Especializada","Caldas Novas","Sul","(64) 99273-5542","Provável (celular)",5.0,60,""],
+["Alves e Martins Advogados - Trabalhista e Cível","Planaltina","Entorno do DF","(61) 99563-4405","Provável (celular)",5.0,94,"Trabalhista e cível"],
+["Advocacia Edineide Cruz","Planaltina","Entorno do DF","(61) 3637-5210","Improvável (fixo)",5.0,53,"Família (segundo avaliações)"],
+["Lucas Bastos Advocacia","Goianésia","Centro","(62) 98492-7348","Provável (celular)",5.0,65,"Família: pensão, divórcio, guarda e inventário"],
+["Nunes Morais Advogados","Goianésia","Centro","","Verificar",5.0,30,""],
+["Santos Advogados","Mineiros","Sudoeste","(67) 92001-8536","Verificar",5.0,141,"Criminal (segundo avaliações)"],
+["Daniele Guimarães","Mineiros","Sudoeste","(64) 99903-7000","Provável (celular)",5.0,43,"Família"],
+["Escritório de Advocacia Dra. Eliane Brandão","Cidade Ocidental","Entorno do DF","(61) 98583-0023","Verificar",5.0,1,""],
+["Silva Pereira Advogados","Cidade Ocidental","Entorno do DF","(11) 96994-2510","Verificar",5.0,11,"Trabalhista (segundo avaliações)"],
+["Advogada Mirela Lino","Inhumas","Grande Goiânia","(62) 98134-9901","Provável (celular)",5.0,31,""],
+["João Miguel Advogados","Inhumas","Grande Goiânia","(62) 99880-9385","Provável (celular)",5.0,28,"Licitações públicas (segundo avaliações)"],
+["Dr. Pedro Henrique Dezem","Morrinhos","Sul","(64) 99615-4737","Confirmado",5.0,57,""],
+["Dr. Renato Alexandre Advogado","Morrinhos","Sul","(64) 99971-8590","Provável (celular)",5.0,95,""],
+["Borges, Mivillyn & Lima Advogados","Quirinópolis","Sudoeste","(64) 98417-7371","Provável (celular)",5.0,175,""],
+["Cleiton Lima Advogados","Quirinópolis","Sudoeste","(64) 3651-2206","Verificar",4.6,23,"Previdenciário (segundo avaliações)"],
+["Eduardo Torres - Advocacia e Assessoria Jurídica","Porangatu","Norte","(62) 98471-5119","Provável (celular)",5.0,101,""],
+["Advocacia Mendonça e Advogados Associados","Porangatu","Norte","(62) 98584-0707","Provável (celular)",5.0,20,""],
+["Dr. Willian Maia Castro","Uruaçu","Norte","(62) 98240-8332","Provável (celular)",5.0,12,""],
+["Fabricio Douglas Advogados Associados","Uruaçu","Norte","(62) 99353-3633","Provável (celular)",5.0,344,""]
+];
+const LEADS = RAW.map((r,i)=>({
+  id:i+1, nome:r[0], cidade:r[1], regiao:r[2], tel:r[3], whats:r[4], nota:r[5], avals:r[6],
+  area:(r[7]||"").replace(/\(.*?\)/g,"").split(/[:,]| e /)[0].trim() || "Não informada"
+}));
+const SIT = ["Não contatado","1º contato efetivado","Respondeu","Sem resposta","Reunião marcada","Sem interesse","Contato inválido"];
+const MSGS = ["Padrão Wanda v1"];
+
+// ===== Persistência (neste navegador) =====
+const KEY = "altabanca-crm-v2";
+let DB;
+try { DB = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ DB = {}; }
+DB.st = DB.st || {}; DB.hist = DB.hist || [];
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
+
+// ===== Datas e formatação (pt-BR) =====
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const pd = s => s ? new Date(s+"T00:00:00") : null;
+const hoje = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+const fmtD = s => { const d=pd(s); return d ? d.toLocaleDateString("pt-BR") : "—"; };
+const fmtInt = n => n.toLocaleString("pt-BR");
+const fmtPct = n => isFinite(n) ? (n*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%" : "—";
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const agora = () => { const d=new Date(); return d.toLocaleDateString("pt-BR")+" às "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); };
+function addBiz(s, n){ const d=pd(s); let c=0; while(c<n){ d.setDate(d.getDate()+1); if(d.getDay()!==0 && d.getDay()!==6) c++; } return iso(d); }
+
+// ===== Linhas combinadas (base + acompanhamento) =====
+function rows(){
+  return LEADS.map(l=>{
+    const s = Object.assign({situacao:"Não contatado", data:"", msg:"", obs:""}, DB.st[l.id]||{});
+    return Object.assign({}, l, s, {prev: s.data ? addBiz(s.data,3) : ""});
+  });
+}
+const S = {tab:"visao", busca:"", cidade:"all", sit:"all", sort:{k:"nome", d:1}};
+function view(){
+  const q = S.busca.trim().toLowerCase();
+  return rows().filter(r=>
+    (S.cidade==="all" || r.cidade===S.cidade) &&
+    (S.sit==="all" || r.situacao===S.sit) &&
+    (!q || `${r.nome} ${r.cidade} ${r.area} ${r.tel}`.toLowerCase().includes(q))
+  );
+}
+const isVencido = r => r.situacao==="Sem resposta" && r.prev && pd(r.prev) < hoje();
+
+// ===== Cards =====
+function kpis(v){
+  const H = hoje();
+  const contatados = v.filter(r=>r.situacao!=="Não contatado").length;
+  const respostas = v.filter(r=>["Respondeu","Reunião marcada"].includes(r.situacao)).length;
+  const reunioes = v.filter(r=>r.situacao==="Reunião marcada").length;
+  const vencidos = v.filter(isVencido).length;
+  const semWa = v.filter(r=>!/Confirmado|Provável/.test(r.whats)).length;
+  const d7 = new Date(H); d7.setDate(d7.getDate()-7);
+  const d14 = new Date(H); d14.setDate(d14.getDate()-14);
+  const cur = v.filter(r=>r.data && pd(r.data)>=d7 && pd(r.data)<=H).length;
+  const prev = v.filter(r=>r.data && pd(r.data)>=d14 && pd(r.data)<d7).length;
+  let varTxt;
+  if(!prev && !cur) varTxt = `<span class="neu">Sem contatos nos últimos 14 dias</span>`;
+  else if(!prev) varTxt = `<span class="neu">Sem base na semana anterior (${prev} → ${cur})</span>`;
+  else { const x=(cur-prev)/prev; const c=x>0?"up":(x<0?"down":"neu"); const s=x>0?"▲":(x<0?"▼":"■");
+    varTxt = `<span class="${c}">${s} ${fmtPct(Math.abs(x))}</span> <span class="neu">vs. 7 dias anteriores (${prev} → ${cur})</span>`; }
+  const cards = [
+    {k:"Escritórios no filtro", v:fmtInt(v.length), d:`de ${fmtInt(LEADS.length)} na base`},
+    {k:"Contatados", v:fmtInt(contatados), d:`${fmtPct(contatados/(v.length||NaN))} do filtro`},
+    {k:"Respostas", v:fmtInt(respostas), d:`Taxa de resposta: ${fmtPct(respostas/(contatados||NaN))}`},
+    {k:"Reuniões marcadas", v:fmtInt(reunioes), d:`${fmtPct(reunioes/(v.length||NaN))} dos escritórios do filtro`},
+    {k:"Retornos vencidos", v:fmtInt(vencidos), d:`Sem resposta e prazo do 2º contato já passou`},
+    {k:"Contatos na semana", v:fmtInt(cur), d:varTxt},
+    {k:"Sem WhatsApp confirmado/provável", v:fmtInt(semWa), d:`Verificar número antes de enviar`}
+  ];
+  document.getElementById("cards").innerHTML = cards.map(c=>
+    `<div class="card"><div class="k">${c.k}</div><div class="v">${c.v}</div><div class="d">${c.d}</div></div>`).join("");
+}
+
+// ===== Gráficos =====
+function bars(el, items, emptyMsg){
+  if(!items.length){ el.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
+  const max = Math.max(...items.map(i=>i[1])) || 1;
+  el.innerHTML = items.map(([k,n])=>`
+    <div class="row"><div class="lbl" title="${esc(k)}">${esc(k)}</div>
+    <div class="track"><div class="fill" style="width:${(n/max)*100}%"></div></div>
+    <div class="val">${fmtInt(n)}</div></div>`).join("");
+}
+function funil(v){
+  const items = SIT.map(s=>[s, v.filter(r=>r.situacao===s).length]);
+  bars(document.getElementById("chartFunil"), items, "Nenhum escritório no filtro.");
+}
+function cidades(v){
+  const map = {};
+  v.forEach(r=>map[r.cidade]=(map[r.cidade]||0)+1);
+  const items = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  bars(document.getElementById("chartCidade"), items, "Nenhum escritório no filtro.");
+}
+function acoes(v){
+  const H = hoje(); const lim = new Date(H); lim.setDate(lim.getDate()+1);
+  const list = [];
+  v.filter(r=>r.situacao==="Respondeu").forEach(r=>list.push([r,"Responder e propor reunião"]));
+  v.filter(r=>r.situacao==="Sem resposta" && r.prev && pd(r.prev)<=lim).forEach(r=>list.push([r, isVencido(r)?"2º contato vencido":"Fazer 2º contato hoje/amanhã"]));
+  v.filter(r=>r.situacao==="Não contatado" && r.whats!=="Verificar").slice(0,10).forEach(r=>list.push([r,"Enviar 1ª mensagem"]));
+  const el = document.getElementById("acoes");
+  if(!list.length){ el.innerHTML = `<div class="empty">Nenhuma ação pendente com os filtros atuais.</div>`; return; }
+  el.innerHTML = list.map(([r,txt])=>`
+    <div class="todo"><div><b>${esc(r.nome)}</b> <span class="neu">· ${esc(r.cidade)} · ${esc(r.tel||"sem telefone")}</span></div>
+    <div><span class="tag ${/vencido/.test(txt)?"bad":(/Responder/.test(txt)?"ok":"")}">${txt}</span></div></div>`).join("");
+}
+
+// ===== Tabela de acompanhamento (campos editáveis) =====
+const COLS = [
+  {k:"nome", label:"Escritório"},
+  {k:"cidade", label:"Cidade"},
+  {k:"tel", label:"Telefone"},
+  {k:"whats", label:"WhatsApp"},
+  {k:"situacao", label:"Situação"},
+  {k:"data", label:"1º contato"},
+  {k:"msg", label:"Mensagem enviada"},
+  {k:"prev", label:"2º contato previsto"},
+  {k:"obs", label:"Observação"}
+];
+function table(v){
+  const k = S.sort.k, d = S.sort.d;
+  const sorted = [...v].sort((a,b)=>{
+    const x=(a[k]??"")+"", y=(b[k]??"")+"";
+    return x.localeCompare(y,"pt-BR",{numeric:true})*d;
+  });
+  document.getElementById("thead").innerHTML = COLS.map(c=>{
+    const arrow = S.sort.k===c.k ? (S.sort.d>0?" ▲":" ▼") : "";
+    return `<th data-k="${c.k}">${c.label}${arrow}</th>`;
+  }).join("");
+  const tagCls = w => /Confirmado/.test(w)?"ok":(/Provável/.test(w)?"":"warn");
+  document.getElementById("tbody").innerHTML = sorted.map(r=>{
+    const dig = (r.tel||"").replace(/\D/g,"");
+    const wa = dig.length>=10 ? ` <a href="https://wa.me/55${dig}" target="_blank" rel="noopener">abrir</a>` : "";
+    const sitOpts = SIT.map(s=>`<option ${s===r.situacao?"selected":""}>${s}</option>`).join("");
+    return `<tr>
+      <td><b>${esc(r.nome)}</b><div class="neu" style="font-size:11px">${esc(r.area)}</div></td>
+      <td>${esc(r.cidade)}</td>
+      <td>${esc(r.tel||"—")}${wa}</td>
+      <td><span class="tag ${tagCls(r.whats)}">${esc(r.whats)}</span></td>
+      <td><select data-id="${r.id}" data-f="situacao">${sitOpts}</select></td>
+      <td><input type="date" data-id="${r.id}" data-f="data" value="${esc(r.data)}"></td>
+      <td><input class="msg" type="text" list="msgList" data-id="${r.id}" data-f="msg" value="${esc(r.msg)}" placeholder="Ex.: Padrão Wanda v1"></td>
+      <td>${r.prev ? fmtD(r.prev) : '<span class="neu">—</span>'}${isVencido(r)?' <span class="tag bad">vencido</span>':""}</td>
+      <td><input class="obs" type="text" data-id="${r.id}" data-f="obs" value="${esc(r.obs)}" placeholder="Anotação curta"></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="${COLS.length}" class="neu" style="text-align:center;padding:30px">Nenhum resultado para os filtros.</td></tr>`;
+  document.getElementById("count").textContent = `${fmtInt(v.length)} de ${fmtInt(LEADS.length)} escritórios · o 2º contato previsto é calculado automaticamente (3 dias úteis após o 1º contato)`;
+}
+
+// ===== Histórico =====
+const TAGS = {Envio:"", Resposta:"ok", Reunião:"ok", "Follow-up":"warn", Outro:""};
+function historico(){
+  const q = S.busca.trim().toLowerCase();
+  const nomes = Object.fromEntries(LEADS.map(l=>[l.id,l.nome]));
+  const list = DB.hist
+    .filter(h=>!q || (nomes[h.lead]||"").toLowerCase().includes(q))
+    .sort((a,b)=>(b.data.localeCompare(a.data)) || (b.id-a.id));
+  document.getElementById("histList").innerHTML = list.length ? list.map(h=>`
+    <div class="hi">
+      <div class="d">${fmtD(h.data)}</div>
+      <div><b>${esc(nomes[h.lead]||"(removido)")}</b></div>
+      <div><span class="tag ${TAGS[h.tipo]||""}">${esc(h.tipo)}</span></div>
+      <div>${esc(h.texto)}</div>
+      <div><button class="tiny" data-del="${h.id}">×</button></div>
+    </div>`).join("") : `<div class="empty">Nenhum registro ainda. Use o formulário acima para anotar envios, respostas e reuniões.</div>`;
+}
+
+// ===== Renderização geral =====
+function renderAll(){
+  const v = view();
+  kpis(v); funil(v); cidades(v); acoes(v); table(v); historico();
+  document.getElementById("stamp").textContent = "Atualizado em " + agora();
+  document.getElementById("fCidadeWrap").style.display = S.tab==="hist" ? "none" : "";
+  document.getElementById("fSitWrap").style.display = S.tab==="hist" ? "none" : "";
+}
+function setTab(t){
+  S.tab = t;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===t));
+  document.getElementById("secVisao").style.display = t==="visao" ? "" : "none";
+  document.getElementById("secAcomp").style.display = t==="acomp" ? "" : "none";
+  document.getElementById("secHist").style.display = t==="hist" ? "" : "none";
+  renderAll();
+}
+
+// ===== Inicialização de selects e datalist =====
+function initFilters(){
+  const cidades = [...new Set(LEADS.map(l=>l.cidade))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  document.getElementById("fCidade").innerHTML = `<option value="all">Todas as cidades</option>` + cidades.map(c=>`<option>${esc(c)}</option>`).join("");
+  document.getElementById("fSit").innerHTML = `<option value="all">Todas</option>` + SIT.map(s=>`<option>${s}</option>`).join("");
+  document.getElementById("hLead").innerHTML = [...LEADS].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR")).map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join("");
+  document.getElementById("hData").value = iso(hoje());
+  const dl = document.createElement("datalist"); dl.id="msgList";
+  dl.innerHTML = MSGS.map(m=>`<option value="${esc(m)}">`).join(""); document.body.appendChild(dl);
+}
+
+// ===== Eventos =====
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click", ()=>setTab(b.dataset.tab)));
+document.getElementById("fBusca").addEventListener("input", e=>{ S.busca=e.target.value; renderAll(); });
+document.getElementById("fCidade").addEventListener("change", e=>{ S.cidade=e.target.value; renderAll(); });
+document.getElementById("fSit").addEventListener("change", e=>{ S.sit=e.target.value; renderAll(); });
+
+document.getElementById("tbody").addEventListener("change", e=>{
+  const el = e.target; const id = el.dataset.id; if(!id) return;
+  const f = el.dataset.f;
+  DB.st[id] = Object.assign({situacao:"Não contatado", data:"", msg:"", obs:""}, DB.st[id]||{});
+  DB.st[id][f] = el.value;
+  // Ao sair de "Não contatado", registra data do 1º contato e mensagem padrão se estiverem vazias
+  if(f==="situacao" && el.value!=="Não contatado"){
+    if(!DB.st[id].data) DB.st[id].data = iso(hoje());
+    if(!DB.st[id].msg) DB.st[id].msg = MSGS[0];
+  }
+  save(); renderAll();
+});
+document.getElementById("thead").addEventListener("click", e=>{
+  const th = e.target.closest("th"); if(!th) return;
+  const k = th.dataset.k;
+  S.sort = S.sort.k===k ? {k, d:-S.sort.d} : {k, d:1};
+  renderAll();
+});
+
+document.getElementById("hAdd").addEventListener("click", ()=>{
+  const texto = document.getElementById("hTexto").value.trim();
+  if(!texto){ alert("Escreva um resumo da conversa."); return; }
+  DB.hist.push({
+    id: Date.now(),
+    lead: +document.getElementById("hLead").value,
+    data: document.getElementById("hData").value || iso(hoje()),
+    tipo: document.getElementById("hTipo").value,
+    texto
+  });
+  document.getElementById("hTexto").value = "";
+  save(); renderAll();
+});
+document.getElementById("histList").addEventListener("click", e=>{
+  const id = e.target.dataset.del; if(!id) return;
+  DB.hist = DB.hist.filter(h=>String(h.id)!==id); save(); renderAll();
+});
+
+document.getElementById("btnCsv").addEventListener("click", ()=>{
+  const head = ["Escritório","Cidade","Região","Telefone","WhatsApp","Situação","1º contato","Mensagem enviada","2º contato previsto","Observação"];
+  const q = s => `"${String(s??"").replace(/"/g,'""')}"`;
+  const lines = [head.join(";")].concat(rows().map(r=>[r.nome,r.cidade,r.regiao,r.tel,r.whats,r.situacao,fmtD(r.data),r.msg,r.prev?fmtD(r.prev):"",r.obs].map(q).join(";")));
+  const blob = new Blob(["\uFEFF"+lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "alta_banca_acompanhamento.csv"; a.click();
+});
+document.getElementById("btnReset").addEventListener("click", ()=>{
+  if(confirm("Apagar todas as situações, datas, observações e o histórico deste navegador?")){
+    DB = {st:{}, hist:[]}; save(); renderAll();
+  }
+});
+
+initFilters();
+renderAll();
+</script>
+</body>
+</html>
