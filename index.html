@@ -68,6 +68,9 @@
   td select.wasel{min-width:150px}
   td input.cidin{width:130px}
   td input.ufin{width:50px;text-transform:uppercase}
+  .pipe{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .chip{background:#fff;color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600}
+  .chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
   @media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:120px 1fr 50px}.hi{grid-template-columns:1fr}}
 </style>
 </head>
@@ -134,6 +137,7 @@
       <div class="f"><label for="nWa">WhatsApp</label><select id="nWa"><option>Confirmado</option><option selected>Provável (celular)</option><option>Improvável (fixo)</option><option>Verificar</option><option>Citado em avaliação</option><option>Inválido</option></select></div>
       <div><button id="nAdd">+ Adicionar contato</button></div>
     </div>
+    <div class="pipe" id="pipe"></div>
     <div class="tbl">
       <table>
         <thead><tr id="thead"></tr></thead>
@@ -282,11 +286,11 @@ function rows(){
   });
 }
 const S = {tab:"visao", busca:"", cidade:"all", sit:"all", sort:{k:"nome", d:1}};
-function view(){
+function view(ignSit){
   const q = S.busca.trim().toLowerCase();
   return rows().filter(r=>
     (S.cidade==="all" || r.cidade===S.cidade) &&
-    (S.sit==="all" || r.situacao===S.sit) &&
+    (ignSit || S.sit==="all" || r.situacao===S.sit) &&
     (!q || `${r.nome} ${r.cidade} ${r.area} ${r.tel}`.toLowerCase().includes(q))
   );
 }
@@ -352,6 +356,13 @@ function acoes(v){
   el.innerHTML = list.map(([r,txt])=>`
     <div class="todo"><div><b>${esc(r.nome)}</b> <span class="neu">· ${esc(r.cidade)} · ${esc(r.tel||"sem telefone")}</span></div>
     <div><span class="tag ${/vencido/.test(txt)?"bad":(/Responder/.test(txt)?"ok":"")}">${txt}</span></div></div>`).join("");
+}
+
+// ===== Grupos por situação (abas dentro do acompanhamento) =====
+function pipe(){
+  const v = view(true);
+  const chips = [["all","Todas",v.length]].concat(SIT.map(s=>[s,s,v.filter(r=>r.situacao===s).length]));
+  document.getElementById("pipe").innerHTML = chips.map(([k,l,n])=>`<button class="chip ${S.sit===k?"on":""}" data-sit="${esc(k)}">${esc(l)} · ${fmtInt(n)}</button>`).join("");
 }
 
 // ===== Tabela de acompanhamento (campos editáveis) =====
@@ -421,7 +432,8 @@ function historico(){
 // ===== Renderização geral =====
 function renderAll(){
   const v = view();
-  kpis(v); funil(v); cidades(v); acoes(v); table(v); historico();
+  kpis(v); funil(v); cidades(v); acoes(v); table(v); historico(); pipe();
+  document.getElementById("fSit").value = S.sit;
   document.getElementById("stamp").textContent = "Atualizado em " + agora();
   document.getElementById("fCidadeWrap").style.display = S.tab==="hist" ? "none" : "";
   document.getElementById("fSitWrap").style.display = S.tab==="hist" ? "none" : "";
@@ -460,6 +472,7 @@ document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click", ()=>set
 document.getElementById("fBusca").addEventListener("input", e=>{ S.busca=e.target.value; renderAll(); });
 document.getElementById("fCidade").addEventListener("change", e=>{ S.cidade=e.target.value; renderAll(); });
 document.getElementById("fSit").addEventListener("change", e=>{ S.sit=e.target.value; renderAll(); });
+document.getElementById("pipe").addEventListener("click", e=>{ const b=e.target.closest("[data-sit]"); if(!b) return; S.sit=b.dataset.sit; renderAll(); });
 
 document.getElementById("tbody").addEventListener("change", e=>{
   const el = e.target; const id = el.dataset.id; if(!id) return;
@@ -472,6 +485,8 @@ document.getElementById("tbody").addEventListener("change", e=>{
     if(!DB.st[id].data) DB.st[id].data = iso(hoje());
     if(!DB.st[id].msg) DB.st[id].msg = MSGS[0];
   }
+  // Ao mudar a situação, o lead sai da lista anterior e a visão vai para o novo grupo
+  if(f==="situacao") S.sit = el.value;
   save(); renderAll();
 });
 document.getElementById("thead").addEventListener("click", e=>{
