@@ -63,6 +63,11 @@
   .hi{display:grid;grid-template-columns:100px 220px 150px 1fr 40px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
   .hi:last-child{border-bottom:0}
   .hi .d{color:var(--mut)}
+  td input.nomein{width:250px}
+  td input.telin{width:150px}
+  td select.wasel{min-width:150px}
+  td input.cidin{width:130px}
+  td input.ufin{width:50px;text-transform:uppercase}
   @media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:120px 1fr 50px}.hi{grid-template-columns:1fr}}
 </style>
 </head>
@@ -75,6 +80,7 @@
     </div>
     <div>
       <div class="btns">
+        <button class="ghost" id="btnXls">Exportar Excel</button>
         <button class="ghost" id="btnCsv">Exportar CSV</button>
         <button class="ghost" id="btnReset">Zerar acompanhamento</button>
       </div>
@@ -120,6 +126,14 @@
 
   <!-- ACOMPANHAMENTO -->
   <section id="secAcomp" style="display:none">
+    <div class="hform">
+      <div class="f"><label for="nNome">Escritório</label><input id="nNome" type="text" placeholder="Nome do escritório"></div>
+      <div class="f"><label for="nCid">Cidade</label><input id="nCid" type="text" placeholder="Ex.: Goiânia"></div>
+      <div class="f"><label for="nUf">UF</label><input id="nUf" type="text" maxlength="2" value="GO" style="min-width:70px"></div>
+      <div class="f"><label for="nTel">Telefone</label><input id="nTel" type="text" placeholder="(62) 99999-9999"></div>
+      <div class="f"><label for="nWa">WhatsApp</label><select id="nWa"><option>Confirmado</option><option selected>Provável (celular)</option><option>Improvável (fixo)</option><option>Verificar</option><option>Citado em avaliação</option><option>Inválido</option></select></div>
+      <div><button id="nAdd">+ Adicionar contato</button></div>
+    </div>
     <div class="tbl">
       <table>
         <thead><tr id="thead"></tr></thead>
@@ -142,7 +156,15 @@
         <input id="hTexto" type="text" placeholder="Ex.: Respondeu pedindo valores; combinamos ligação na terça"></div>
       <div><button id="hAdd">Adicionar</button></div>
     </div>
-    <div class="hist" id="histList"></div>
+    <div class="hform">
+    <div class="f txt"><label for="hBusca">Pesquisar no histórico</label>
+      <input id="hBusca" type="search" placeholder="Nome do escritório, palavra do resumo, data (dd/mm/aaaa)..."></div>
+    <div class="f"><label for="hFiltroTipo">Tipo</label>
+      <select id="hFiltroTipo"><option value="all">Todos</option><option>Envio</option><option>Resposta</option><option>Reunião</option><option>Follow-up</option><option>Outro</option></select></div>
+    <div class="f"><label>&nbsp;</label><button class="ghost" id="hLimpar">Limpar busca</button></div>
+  </div>
+  <div class="count" id="histCount"></div>
+  <div class="hist" id="histList"></div>
   </section>
 </div>
 
@@ -206,18 +228,39 @@ const RAW = [
 ["Fabricio Douglas Advogados Associados","Uruaçu","Norte","(62) 99353-3633","Provável (celular)",5.0,344,""]
 ];
 const LEADS = RAW.map((r,i)=>({
-  id:i+1, nome:r[0], cidade:r[1], regiao:r[2], tel:r[3], whats:r[4], nota:r[5], avals:r[6],
+  id:i+1, nome:r[0], cidade:r[1], uf:"GO", regiao:r[2], tel:r[3], whats:r[4], nota:r[5], avals:r[6],
   area:(r[7]||"").replace(/\(.*?\)/g,"").split(/[:,]| e /)[0].trim() || "Não informada"
 }));
-const SIT = ["Não contatado","1º contato efetivado","Respondeu","Sem resposta","Reunião marcada","Sem interesse","Contato inválido"];
+const SIT = ["Não contatado","1º contato efetivado","Respondeu","Em conversa","Reunião marcada","Sem interesse","Lead desqualificado"];
 const MSGS = ["Padrão Wanda v1"];
 
 // ===== Persistência (neste navegador) =====
 const KEY = "altabanca-crm-v2";
 let DB;
 try { DB = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ DB = {}; }
-DB.st = DB.st || {}; DB.hist = DB.hist || [];
+DB.st = DB.st || {}; DB.hist = DB.hist || []; DB.edit = DB.edit || {};
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
+
+// Contatos adicionados pelo usuário (persistem no navegador)
+DB.novos = DB.novos || [];
+DB.novos.forEach(n=>LEADS.push(n));
+
+// Migração: situações removidas passam para as novas opções
+LEADS.forEach(l=>{ const s=DB.st[l.id]; if(!s) return; if(s.situacao==='Contato inválido'||s.situacao==='Sem resposta') s.situacao = s.situacao==='Contato inválido' ? 'Lead desqualificado' : '1º contato efetivado'; });
+
+// Situações do CSV de acompanhamento (aplicadas uma vez)
+const SEED_V = "csv-2026-10-15";
+const C1 = "1º contato efetivado";
+const SEED = [
+["Benedito Torres Advogados",C1],["Dayanne Teles",C1],["Advocacia Martins",C1],["Dra. Markenia Vilela - Advogada Criminalista",C1],["Advocacia Natana Marcelina",C1],["Alves e Rodrigues",C1],["Andressa Miranda - Advogados",C1],["Figueiredo & Wolney - Advocacia e Consultoria Jurídica",C1],["Barbosa & Paião Advogados",C1],["Bruno Campos Esteves Advocacia",C1],["Dr. Jeferson Teodoro Neto",C1],["Arlen S Oliveira - Advogado",C1],["Afonso e Andrade - Advocacia Especializada",C1],["Alves e Martins Advogados - Trabalhista e Cível",C1],["Advocacia Edineide Cruz","Contato inválido"],["Daniele Guimarães",C1],["Escritório de Advocacia Dra. Eliane Brandão","Contato inválido"],["Advogada Mirela Lino",C1],["Dr. Pedro Henrique Dezem",C1],["Dr. Renato Alexandre Advogado",C1],["Borges, Mivillyn & Lima Advogados",C1],["Cleiton Lima Advogados",C1],["Eduardo Torres - Advocacia e Assessoria Jurídica",C1],["Advocacia Mendonça e Advogados Associados",C1],["Dr. Willian Maia Castro",C1],["Fabricio Douglas Advogados Associados","Respondeu"]
+];
+if(DB.seedV !== SEED_V){
+  SEED.forEach(([nome,sit])=>{
+    const l = LEADS.find(x=>x.nome===nome); if(!l) return;
+    DB.st[l.id] = Object.assign({situacao:"Não contatado", data:"", msg:"", obs:""}, DB.st[l.id]||{}, {situacao:sit, data:"2026-10-15", msg:"Padrão Wanda v1"});
+  });
+  DB.seedV = SEED_V; save();
+}
 
 // ===== Datas e formatação (pt-BR) =====
 const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -233,8 +276,9 @@ function addBiz(s, n){ const d=pd(s); let c=0; while(c<n){ d.setDate(d.getDate()
 // ===== Linhas combinadas (base + acompanhamento) =====
 function rows(){
   return LEADS.map(l=>{
+    const base = Object.assign({}, l, DB.edit[l.id]||{});
     const s = Object.assign({situacao:"Não contatado", data:"", msg:"", obs:""}, DB.st[l.id]||{});
-    return Object.assign({}, l, s, {prev: s.data ? addBiz(s.data,3) : ""});
+    return Object.assign({}, base, s, {prev: s.data ? addBiz(s.data,3) : ""});
   });
 }
 const S = {tab:"visao", busca:"", cidade:"all", sit:"all", sort:{k:"nome", d:1}};
@@ -314,6 +358,7 @@ function acoes(v){
 const COLS = [
   {k:"nome", label:"Escritório"},
   {k:"cidade", label:"Cidade"},
+  {k:"uf", label:"UF"},
   {k:"tel", label:"Telefone"},
   {k:"whats", label:"WhatsApp"},
   {k:"situacao", label:"Situação"},
@@ -333,15 +378,17 @@ function table(v){
     return `<th data-k="${c.k}">${c.label}${arrow}</th>`;
   }).join("");
   const tagCls = w => /Confirmado/.test(w)?"ok":(/Provável/.test(w)?"":"warn");
+  const WA_OPTS = ["Confirmado","Provável (celular)","Improvável (fixo)","Verificar","Citado em avaliação","Inválido"];
   document.getElementById("tbody").innerHTML = sorted.map(r=>{
     const dig = (r.tel||"").replace(/\D/g,"");
     const wa = dig.length>=10 ? ` <a href="https://wa.me/55${dig}" target="_blank" rel="noopener">abrir</a>` : "";
     const sitOpts = SIT.map(s=>`<option ${s===r.situacao?"selected":""}>${s}</option>`).join("");
     return `<tr>
-      <td><b>${esc(r.nome)}</b><div class="neu" style="font-size:11px">${esc(r.area)}</div></td>
-      <td>${esc(r.cidade)}</td>
-      <td>${esc(r.tel||"—")}${wa}</td>
-      <td><span class="tag ${tagCls(r.whats)}">${esc(r.whats)}</span></td>
+      <td><input class="nomein" type="text" data-id="${r.id}" data-f="nome" data-base="1" value="${esc(r.nome)}"><div class="neu" style="font-size:11px">${esc(r.area)}</div></td>
+      <td><input class="cidin" type="text" data-id="${r.id}" data-f="cidade" data-base="1" value="${esc(r.cidade)}"></td>
+      <td><input class="ufin" type="text" maxlength="2" data-id="${r.id}" data-f="uf" data-base="1" value="${esc(r.uf||"")}"></td>
+      <td><input class="telin" type="text" data-id="${r.id}" data-f="tel" data-base="1" value="${esc(r.tel)}" placeholder="(62) 99999-9999">${wa}</td>
+      <td><select class="wasel" data-id="${r.id}" data-f="whats" data-base="1">${WA_OPTS.map(o=>`<option ${o===r.whats?"selected":""}>${o}</option>`).join("")}</select></td>
       <td><select data-id="${r.id}" data-f="situacao">${sitOpts}</select></td>
       <td><input type="date" data-id="${r.id}" data-f="data" value="${esc(r.data)}"></td>
       <td><input class="msg" type="text" list="msgList" data-id="${r.id}" data-f="msg" value="${esc(r.msg)}" placeholder="Ex.: Padrão Wanda v1"></td>
@@ -355,11 +402,12 @@ function table(v){
 // ===== Histórico =====
 const TAGS = {Envio:"", Resposta:"ok", Reunião:"ok", "Follow-up":"warn", Outro:""};
 function historico(){
-  const q = S.busca.trim().toLowerCase();
+  const q = (S.hb||"").trim().toLowerCase();
   const nomes = Object.fromEntries(LEADS.map(l=>[l.id,l.nome]));
   const list = DB.hist
-    .filter(h=>!q || (nomes[h.lead]||"").toLowerCase().includes(q))
+    .filter(h=>(!S.ht || S.ht==="all" || h.tipo===S.ht) && (!q || `${nomes[h.lead]||""} ${h.texto} ${h.tipo} ${fmtD(h.data)}`.toLowerCase().includes(q)))
     .sort((a,b)=>(b.data.localeCompare(a.data)) || (b.id-a.id));
+  document.getElementById("histCount").textContent = `${fmtInt(list.length)} de ${fmtInt(DB.hist.length)} registros`;
   document.getElementById("histList").innerHTML = list.length ? list.map(h=>`
     <div class="hi">
       <div class="d">${fmtD(h.data)}</div>
@@ -389,13 +437,22 @@ function setTab(t){
 
 // ===== Inicialização de selects e datalist =====
 function initFilters(){
-  const cidades = [...new Set(LEADS.map(l=>l.cidade))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const cidades = [...new Set(rows().map(l=>l.cidade).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
   document.getElementById("fCidade").innerHTML = `<option value="all">Todas as cidades</option>` + cidades.map(c=>`<option>${esc(c)}</option>`).join("");
   document.getElementById("fSit").innerHTML = `<option value="all">Todas</option>` + SIT.map(s=>`<option>${s}</option>`).join("");
   document.getElementById("hLead").innerHTML = [...LEADS].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR")).map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join("");
   document.getElementById("hData").value = iso(hoje());
   const dl = document.createElement("datalist"); dl.id="msgList";
   dl.innerHTML = MSGS.map(m=>`<option value="${esc(m)}">`).join(""); document.body.appendChild(dl);
+}
+
+// ===== Atualiza o filtro de cidade quando uma cidade é editada =====
+function refreshCidade(){
+  const sel = document.getElementById("fCidade");
+  const cs = [...new Set(rows().map(r=>r.cidade).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  sel.innerHTML = `<option value="all">Todas as cidades</option>` + cs.map(c=>`<option>${esc(c)}</option>`).join("");
+  if(!cs.includes(S.cidade)) S.cidade = "all";
+  sel.value = S.cidade;
 }
 
 // ===== Eventos =====
@@ -407,6 +464,7 @@ document.getElementById("fSit").addEventListener("change", e=>{ S.sit=e.target.v
 document.getElementById("tbody").addEventListener("change", e=>{
   const el = e.target; const id = el.dataset.id; if(!id) return;
   const f = el.dataset.f;
+  if(el.dataset.base){ DB.edit[id] = Object.assign({}, DB.edit[id]||{}); DB.edit[id][f] = el.value.trim(); save(); refreshCidade(); renderAll(); return; }
   DB.st[id] = Object.assign({situacao:"Não contatado", data:"", msg:"", obs:""}, DB.st[id]||{});
   DB.st[id][f] = el.value;
   // Ao sair de "Não contatado", registra data do 1º contato e mensagem padrão se estiverem vazias
@@ -436,11 +494,33 @@ document.getElementById("hAdd").addEventListener("click", ()=>{
   document.getElementById("hTexto").value = "";
   save(); renderAll();
 });
+document.getElementById("hBusca").addEventListener("input", e=>{ S.hb=e.target.value; renderAll(); });
+document.getElementById("hFiltroTipo").addEventListener("change", e=>{ S.ht=e.target.value; renderAll(); });
+document.getElementById("hLimpar").addEventListener("click", ()=>{ S.hb=""; S.ht="all"; document.getElementById("hBusca").value=""; document.getElementById("hFiltroTipo").value="all"; renderAll(); });
 document.getElementById("histList").addEventListener("click", e=>{
   const id = e.target.dataset.del; if(!id) return;
   DB.hist = DB.hist.filter(h=>String(h.id)!==id); save(); renderAll();
 });
 
+document.getElementById("nAdd").addEventListener("click", ()=>{
+  const nome = document.getElementById("nNome").value.trim();
+  if(!nome){ alert("Informe o nome do escritório."); return; }
+  const cidade = document.getElementById("nCid").value.trim() || "Não informada";
+  const ref = LEADS.find(l=>(l.cidade||"").toLowerCase()===cidade.toLowerCase());
+  const lead = {id:LEADS.length+1, nome, cidade, uf: (document.getElementById("nUf").value.trim().toUpperCase() || "GO"), regiao: ref?ref.regiao:"Não informada", tel:document.getElementById("nTel").value.trim(), whats:document.getElementById("nWa").value, nota:0, avals:0, area:"Não informada"};
+  LEADS.push(lead); DB.novos.push(lead); save();
+  document.getElementById("nNome").value=""; document.getElementById("nCid").value=""; document.getElementById("nTel").value="";
+  document.getElementById("hLead").innerHTML = [...LEADS].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR")).map(l=>`<option value="${l.id}">${esc(l.nome)}</option>`).join("");
+  refreshCidade(); renderAll();
+});
+
+document.getElementById("btnXls").addEventListener("click", ()=>{
+  const head = ["Escritório","Cidade","Região","Telefone","WhatsApp","Situação","1º contato","Mensagem enviada","2º contato previsto","Observação"];
+  const body = rows().map(r=>`<tr>${[r.nome,r.cidade,r.regiao,r.tel,r.whats,r.situacao,fmtD(r.data),r.msg,r.prev?fmtD(r.prev):"",r.obs].map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
+  const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr>${body}</table></body></html>`;
+  const blob = new Blob([html], {type:"application/vnd.ms-excel"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "alta_banca_acompanhamento.xls"; a.click();
+});
 document.getElementById("btnCsv").addEventListener("click", ()=>{
   const head = ["Escritório","Cidade","Região","Telefone","WhatsApp","Situação","1º contato","Mensagem enviada","2º contato previsto","Observação"];
   const q = s => `"${String(s??"").replace(/"/g,'""')}"`;
@@ -450,7 +530,7 @@ document.getElementById("btnCsv").addEventListener("click", ()=>{
 });
 document.getElementById("btnReset").addEventListener("click", ()=>{
   if(confirm("Apagar todas as situações, datas, observações e o histórico deste navegador?")){
-    DB = {st:{}, hist:[]}; save(); renderAll();
+    DB = {st:{}, hist:[], edit:DB.edit, novos:DB.novos, seedV:DB.seedV}; save(); renderAll();
   }
 });
 
